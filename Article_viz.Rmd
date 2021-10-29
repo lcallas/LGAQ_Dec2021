@@ -392,5 +392,5 @@ Regardless of the graph type you choose, there are a few guidelines that can hel
 
 
 
-_All visualizations in this article were created in RStudio. To try these yourself, download the Rmarkdown file from  
+**All visualizations in this article were created with the ggplot2 package in RStudio. To try these yourself, download the .rmd file from  https://github.com/lcallas/LGAQ_Dec2021.
 
