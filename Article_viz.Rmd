@@ -1,0 +1,396 @@
+---
+title: "DataViz"
+author: "Lisa Callas"
+date: "19/10/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+editor_options:
+  chunk_output_type: console
+---
+
+If a picture is worth a thousand words, a good visualization in an audit report should be able to let you trim back at least a page or two!  In that spirit, I wanted to share with you some of my favourite data visualizations.
+
+__Saying ‘no’ to pie, and ‘yes’ to waffles__
+
+Unless you are only taking one big slice out of your pie, pie charts are notorious for being hard to read and understand. Pie charts can be full of annotations and key messages are easily lost in the noise.
+
+Waffle diagrams can be a great alternative to show proportionality. Additionally, because they will typically have a square or rectangle footprint, they often fit nicely on a page.
+
+```{r plainwaffle, echo=F, message=F, warning=F}
+library(waffle)
+
+waffle(
+  c('Waffles 62%' = 13, 'Pie 38%' = 5), rows = 3,colors = c( "#193a5a","grey60"), legend_pos="bottom"
+)->waffle_vs_pie
+
+waffle_vs_pie+
+  labs(title="More People Like Waffles Than Pie")+
+  theme(plot.title = element_text(size=10, face="bold", colour= "#193a5a"))->waffle_vs_pie
+
+waffle_vs_pie
+```
+
+
+
+By using icons in your waffle chart, you can add even more visual interest and emphasize the differences in the groups you are visualizing.
+
+```{r iconwaffle ,echo=F, message=F, warning=F}
+library(emojifont)
+library(tidyverse)
+library(ggwaffle)
+
+load.emojifont('OpenSansEmoji.ttf')
+load.emojifont("EmojiOne.ttf")
+# list.emojifonts()
+# search_emoji("")
+# emoji("candy")
+# emoji("chocolate_bar")
+
+can_choc <- tibble(
+  group= c("candy","candy","candy","candy","candy","candy","candy","candy","candy","candy","candy","candy","candy","candy","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate","chocolate"))
+
+can_choc %>% 
+    waffle_iron(aes_d(group=group)) %>% 
+  mutate(label= ifelse(group=="candy", emoji('candy'), emoji("chocolate_bar")))->can_choc
+
+names(can_choc) <- c("x", "y", "group", "label")
+
+
+ggplot(can_choc, aes(x, y, colour = group)) + 
+  geom_text(aes(label=label, colour=group), family='OpenSansEmoji', size=7) +
+  labs(title = "More People Prefer Chocolate to Candy",
+       subtitle = "Chocolate 56%     Candy 44%")+
+  scale_colour_manual(values = c("salmon", "tan4"))+
+  scale_y_continuous(expand=expansion(mult=0.2))+
+  coord_equal() + 
+  theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        plot.title = element_text(size=12, colour="tan4", face="bold"),
+        plot.subtitle = element_text(size=10, face="italic", colour="salmon"))->choc_candy_waffle
+
+choc_candy_waffle
+```
+
+
+__Sitting Back-to-Back__
+
+Multiple category comparisons can be very difficult to visualize. Often we’ll see these in stacked bar graphs with colour-coding that corresponds to a legend. Needing a legend to understand a visualization is a big red flag. If you need a legend with more than two or three entries, you should definitely reassess your choice of visualization. 
+
+A great option to replace the stacked bar graph is a back-to-back bar graph. It separates out the key comparison variable (in this case the year) and draws the viewer’s attention to the categories in the centre.
+
+
+```{r backtoback, echo=F, message=F, warning=F}
+
+library(tidyverse)
+library(cowplot)
+library(scales)
+library(data.table)
+
+
+imaginarycandydata <- tribble(
+                ~candy,  ~year, ~totalcandy,
+        "Reese's Cups", "2020",     3409761,
+        "Reese's Cups", "2010",   2727808.8,
+            "Skittles", "2020",     2818235,
+            "Skittles", "2010",     2254588,
+               "M&M's", "2020",     2178589,
+               "M&M's", "2010",   1742871.2,
+           "Starburst", "2020",     2164951,
+           "Starburst", "2010",   1731960.8,
+         "Hot Tamales", "2020",     1747342,
+         "Hot Tamales", "2010",   1397873.6,
+     "Sour Patch Kids", "2020",     1333651,
+     "Sour Patch Kids", "2010",   1066920.8,
+      "Hershey Kisses", "2020",     1190073,
+      "Hershey Kisses", "2010",    952058.4,
+            "Snickers", "2020",     1096405,
+            "Snickers", "2010",      877124,
+        "Tootsie Pops", "2020",     1092516,
+        "Tootsie Pops", "2010",    874012.8,
+          "Candy Corn", "2020",     1054474,
+          "Candy Corn", "2010",    843579.2
+     )
+
+imaginarycandydata %>%
+    filter(year==2020) %>% 
+  ggplot() + 
+    geom_col(aes(x=reorder(candy, totalcandy), y=totalcandy, fill=totalcandy)) +
+    geom_text(aes(x=candy, y=totalcandy,label= comma(totalcandy)), hjust=1.05, colour= "white", size=3)+
+  coord_flip()+
+    ggtitle(label="", subtitle = "2020")+
+  theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        axis.text.y = element_text(size=10, face="bold", hjust=0.5),
+        plot.margin = unit(c(0,0,0,-1.3),"cm"),
+        plot.subtitle = element_text(hjust=0.95, face="bold", size=9, colour="#42a5f5"))->p2020
+
+
+imaginarycandydata %>%
+    filter(year==2010) %>%
+  ggplot() +
+    geom_col(aes(x=reorder(candy, totalcandy), y= totalcandy, fill=totalcandy)) +
+    geom_text(aes(x=candy, y=totalcandy,label= comma(totalcandy)), hjust=-0.05, colour= "white", size=3)+
+  coord_flip()+
+    ggtitle(label= "", subtitle = "2010")+
+  theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        axis.text.y = element_text(size=10, face="bold"),
+        plot.margin = unit(c(0,1.2,0,0.5),"cm"),
+        plot.subtitle = element_text(hjust=0.05, face="bold", size=9, colour="#42a5f5"))+
+  scale_y_reverse()+
+  scale_x_discrete(position = "left")->p2010
+
+candy_grid <- plot_grid(p2010, p2020)
+
+title <- ggdraw() + 
+  draw_label(
+    "All types of candy consumption has increased 20% since 2010",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0,
+    size = 10,
+    colour = "#193a5a"
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(0, 0, 0, 15)
+  )
+Candy_Final <- plot_grid(
+  title, candy_grid,
+  ncol = 1,
+  # rel_heights values control vertical title margins
+  rel_heights = c(0.1, 1)
+)
+
+Candy_Final
+```
+
+__Who doesn’t love lollipops!__
+
+Lollipop diagrams offer a fun alternative to bar graphs. Instead of a blunt end, they offer a pop of visual interest to draw the viewer in. 
+
+
+```{r lollipop1, echo=F, message=F, warning=F}
+library(tidyverse)
+library(scales)
+
+imaginarycandydata %>% 
+  filter(year==2020) %>% 
+
+ggplot(aes(x=reorder(candy,-totalcandy), y=totalcandy))+
+  geom_col(width = 0.01, colour="grey70")+
+  geom_point(size=8, colour="#193A5A")+
+  geom_text(aes(label=paste0(round(totalcandy/1e6, 2)," M")), vjust=-1.8, size=3)+
+  scale_y_continuous(expand=expansion(mult=c(0.05,0.2)))+
+  labs(title="Reece's Cups are the most popular candy in 2020",
+       subtitle = "(in millions of pounds sold)")+
+   theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(size=10, face="bold", angle = 45),
+        plot.title = element_text(face="bold", size=10, colour= "#193a5a"),
+        plot.subtitle = element_text(face="italic", colour="grey50", size=9))->lolli1
+
+lolli1
+
+```
+
+
+For extra fun, the lollipop end could be an icon, an image, or an annotation. 
+
+
+```{r lollipop2,echo=F, message=F, warning=F}
+library(tidyverse)
+library(scales)
+library(ggimage)
+
+
+imaginarycandydata %>% 
+  filter(year==2020) %>% 
+
+ggplot(aes(x=reorder(candy,-totalcandy), y=totalcandy))+
+  geom_col(width = 0.01, colour="grey70")+
+  geom_emoji(image='1f36c', size=0.05)+
+  geom_text(aes(label=paste0(round(totalcandy/1e6, 2), " M")), vjust=-1.5)+
+  scale_y_continuous(expand=expansion(mult=c(0.05,0.2)))+
+  labs(title="Reece's Cups are the most popular candy in 2020",
+       subtitle = "(in millions of pounds sold)")+
+   theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        axis.text.x = element_text(size=10, face="bold", angle=45),
+        plot.title = element_text(face="bold", size=10, colour= "red"),
+        plot.subtitle = element_text(face="italic", colour="grey50", size=9))->lolli2
+
+lolli2
+```
+
+You can also position your lollipops horizontally to fit better on the page if you have lots of categories.
+
+```{r lollipop3, echo=F, message=F, warning=F}
+
+library(tidyverse)
+library(scales)
+
+
+imaginarycandydata %>% 
+  filter(year==2020) %>% 
+  
+ggplot(aes(x=reorder(candy,totalcandy), y=totalcandy))+
+  geom_col(width = 0.01, colour="grey70")+
+  geom_point(size=10, colour="#193A5A")+
+  geom_text(aes(x=candy, y=500000,label=comma(totalcandy)),vjust=-0.7, size=3)+
+  coord_flip()+
+  labs(title="Reece's Cups are the most popular candy in 2020",
+       subtitle = "(in pounds sold)")+
+   theme(legend.position = "none",
+        axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        axis.text.y = element_text(size=10, face="bold"),
+        plot.title = element_text(hjust = -0.5, size=10, colour="#193a5a"),
+        plot.subtitle = element_text(face="italic", hjust=-0.1, colour="grey50", size=9))->lolli3
+
+lolli3
+```
+
+
+__Heavy lifting with dumbbells__
+
+After all of the waffles and lollipops, a little exercise may be a good idea. Try dumbbells! Dumbbell plots easily visualize two points of comparison to show difference or change.
+
+```{r dumbbells, echo=F, message=F, warning=F}
+library(tidyverse)
+library(scales)
+
+Gymattendance <- tribble(
+                                                           ~report_year, ~report_month, ~target, ~monthly_attendance,
+                                                                   2018,    "December",  439434,              468180,
+                                                                   2018,    "November",  514650,              530066,
+                                                                   2018,     "October",  493083,              502159,
+                                                                   2018,   "September",  401078,              431773,
+                                                                   2018,      "August",  472682,              488414,
+                                                                   2018,        "July",  460095,              500260,
+                                                                   2018,        "June",  463141,              476640,
+                                                                   2018,         "May",  510143,              510243,
+                                                                   2018,       "April",  521738,              604706,
+                                                                   2018,       "March",  558245,              588608,
+                                                                   2018,    "February",  501590,              500776,
+                                                                   2018,     "January",  516207,              525807
+                                                           )
+
+
+
+colours <- c("Attendance"= "#193a5a", "Target"= "grey60")
+
+Gymattendance  %>%
+  mutate(report_month= factor(report_month, levels = c("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"))) %>%
+  mutate(report_month= fct_rev(report_month)) %>% 
+  
+  ggplot()+
+  geom_segment(aes(x=monthly_attendance, xend=target,y=report_month, yend= report_month))+ 
+  geom_point(aes(x=monthly_attendance, y= report_month, colour="Attendance"), size=6)+
+  geom_point(aes(x=target, y=report_month, colour="Target"), size=6)+
+  labs(title="Gym attendance targets were acheived\nfor all months in 2018.",
+       colour="Legend")+
+  scale_colour_manual(values=colours)+
+  scale_x_continuous(expand = expansion(mult = 0.2))+
+  theme(axis.line = element_blank(),
+        #axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major.y  = element_line(colour = "grey95"),
+        panel.background = element_blank(),
+        axis.text = element_text(size=10),
+        plot.margin = unit(c(0,0,0,0),"cm"),
+        plot.title = element_text(hjust=-1, size=10, colour="#193a5a"),
+        plot.subtitle = element_text(face="italic", size=9, colour="grey50"),
+        legend.position = "top",
+        legend.title = element_blank(),
+        legend.key = element_blank())->dumbbell
+  
+
+dumbbell
+
+
+```
+
+You can also consider a slopegraph if you want to visually indicate increases or decreases in your values.
+
+```{r slope, echo=F, message=F, warning=F}
+
+
+ave_class_size <- tibble(
+  year=c(2010, 2020, 2010, 2020, 2010, 2020),
+  class=c("Yoga", "Yoga", "Spin", "Spin", "Weights", "Weights"),
+  attendance= c(12, 25, 30, 15, 15, 30)
+)
+
+ave_class_size %>% 
+  pivot_wider(names_from = year, values_from = attendance)->ave_class_size
+
+diff=10
+
+ave_class_size %>% 
+  ggplot()+
+  geom_segment(aes(x=0, xend=diff, y=`2010`, yend=`2020`),colour="grey60")+
+  geom_point(aes(x=0, y=`2010`), size=3, colour= "#193a5a")+
+  geom_point(aes(x=10, y=`2020`), size=3, colour= "#0288d1")+
+  geom_text(aes(x=0, y=`2010`, label= paste0(class,": ", `2010`)), hjust=1.2)+
+  geom_text(aes(x=10, y=`2020`, label=`2020`), hjust=-.3)+
+  labs(title= "Average participation in spin classes has decreased since 2010...",
+       subtitle = "but participation in other classes has increased")+
+  geom_text(aes(x=-1, y=32 , label= "2010"), colour = "#193a5a", size = 5, fontface=4)+
+  geom_text(aes(x=11, y=32, label = "2020"), colour = "#0288d1", size=5, fontface=4)+
+  scale_x_continuous(expand=expansion(mult =0.3))+
+    theme(axis.line = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title = element_blank(),
+        panel.background = element_blank(),
+        plot.title=element_text(size=9, colour="#193a5a", face="bold"),
+        plot.subtitle = element_text(face="italic", size=8, colour= "#0288d1"),
+        legend.position = "top",
+        legend.title = element_blank(),
+        legend.key = element_blank())->class_slope
+
+class_slope
+```
+
+__Keeping it Simple__
+
+Regardless of the graph type you choose, there are a few guidelines that can help make sure your visualizations have the impact you're looking for.
+
+* Keep it simple. Figure out the one thing you want your reader to understand from your visualization and design your graph to support that key message or finding. One visualization is not a good medium for multiple messages (but a series might be...hmmmm).
+* Use the title or annotation to write out the message you want your reader to take away. Don't make them work for it.
+* Sort your graph logically. Most people read from left to right and top to bottom. If you are highlighting the highest or lowest values, design your visualization to put your key data as close to the top and left as you can.
+* Visualize positive as up and negative as down when you can. Sometimes decreases (like costs) are a positive finding, but a line graph that goes down has a negative implication. When this happens, look at different ways of visualizing the data. 
+* Find and follow some visualization guidelines for inclusivity. There are a lot of great resources available to support you making your visualizations more accessible on paper or digitally to readers who may have challenges with their vision or comprehension.
+
+
+
+_All visualizations in this article were created in RStudio. To try these yourself, download the Rmarkdown file from  
+
